@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <title>MDDS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:         #f8fafc;
+      --surface:    #ffffff;
+      --border:     #e2e8f0;
+      --border-mid: #cbd5e1;
+      --text:       #0f172a;
+      --text-mid:   #475569;
+      --text-muted: #94a3b8;
+      --safe:       #16a34a;
+      --safe-bg:    #f0fdf4;
+      --safe-border:#bbf7d0;
+      --warn:       #d97706;
+      --warn-bg:    #fffbeb;
+      --warn-border:#fde68a;
+      --danger:     #dc2626;
+      --danger-bg:  #fef2f2;
+      --danger-border:#fecaca;
+      --accent:     #6366f1;
+      --accent-bg:  #eef2ff;
+      --radius-sm:  8px;
+      --radius:     12px;
+      --radius-lg:  16px;
+      --shadow:     0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+      --shadow-md:  0 4px 12px rgba(0,0,0,.08);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      width: 360px;
+      min-height: 200px;
+      background: var(--bg);
+      font-family: 'Montserrat', sans-serif;
+      font-size: 12px;
+      color: var(--text);
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 16px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+    }
+    .header-logo {
+      width: 32px; height: 32px;
+      background: var(--accent-bg);
+      border-radius: var(--radius-sm);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .header-logo svg { width: 18px; height: 18px; }
+    .header-title {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      color: var(--text);
+    }
+    .header-sub {
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-top: 1px;
+    }
+    .server-status {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 10px;
+      font-weight: 500;
+      color: var(--text-muted);
+    }
+    .status-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--border-mid);
+      transition: background .3s;
+    }
+    .status-dot.online  { background: var(--safe); }
+    .status-dot.offline { background: var(--danger); }
+
+    /* Stany: loading / error / idle */
+    .state {
+      display: none;
+      padding: 36px 24px;
+      text-align: center;
+    }
+    .state.active { display: block; }
+
+    .spinner {
+      width: 28px; height: 28px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin .75s linear infinite;
+      margin: 0 auto 12px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .state-icon { font-size: 32px; margin-bottom: 10px; }
+    .state-title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+    .state-sub   { font-size: 11px; color: var(--text-muted); line-height: 1.5; }
+    .state-error-msg {
+      margin-top: 8px;
+      padding: 6px 10px;
+      background: var(--danger-bg);
+      border: 1px solid var(--danger-border);
+      border-radius: var(--radius-sm);
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      color: var(--danger);
+    }
+
+    /* Wynik klasyfikacji */
+    .result { display: none; }
+    .result.active { display: block; }
+
+    /* Karta domenowa */
+    .domain-card {
+      margin: 12px 12px 0;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      box-shadow: var(--shadow);
+    }
+
+    .domain-label {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+    .domain-name {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: -.02em;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Gauge (pasek) */
+    .gauge-section {
+      margin-top: 14px;
+      display: flex;
+      align-items: flex-end;
+      gap: 12px;
+    }
+    .gauge-wrap { flex: 1; }
+    .gauge-track {
+      height: 6px;
+      background: var(--border);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    .gauge-fill {
+      height: 100%;
+      border-radius: 99px;
+      width: 0%;
+      transition: width .55s cubic-bezier(.16,1,.3,1), background .3s;
+    }
+    .gauge-ticks {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 5px;
+    }
+    .gauge-tick { font-size: 9px; color: var(--text-muted); }
+
+    .score-block { text-align: right; flex-shrink: 0; width: 56px; }
+    .score-value {
+      font-size: 25px;
+      font-weight: 700;
+      letter-spacing: -.03em;
+      line-height: 1;
+    }
+    .score-label {
+      font-size: 10px;
+      font-weight: 500;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* Verdict pill */
+    .verdict-pill {
+      margin-top: 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px 6px 8px;
+      border-radius: 99px;
+      font-size: 12px;
+      font-weight: 600;
+      border: 1px solid transparent;
+      transition: all .3s;
+    }
+    /* Panel szczegolów */
+    .details-panel {
+      margin: 8px 12px 0;
+      overflow: hidden;
+      max-height: 0;
+      transition: max-height .35s cubic-bezier(.16,1,.3,1);
+    }
+    .details-panel.open { max-height: 400px; }
+
+    .details-title {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      color: var(--text-muted);
+      padding: 10px 4px 6px;
+    }
+
+    .feat-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+    .feat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 9px 11px;
+      box-shadow: var(--shadow);
+    }
+    .feat-key {
+      font-size: 9px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+    .feat-val {
+      font-family: 'DM Mono', monospace;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .feat-val.good   { color: var(--safe);   }
+    .feat-val.warn   { color: var(--warn);   }
+    .feat-val.bad    { color: var(--danger); }
+
+    /* Footer */
+    .footer {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px 12px;
+    }
+    .footer.active { display: flex; }
+
+    .btn {
+      flex: 1;
+      height: 32px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text-mid);
+      font-family: 'Montserrat', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: border-color .15s, color .15s, background .15s, box-shadow .15s;
+      box-shadow: var(--shadow);
+    }
+    .btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-bg);
+    }
+    .btn:active { transform: scale(.97); }
+    .btn.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+    .btn.primary:hover { opacity: .9; color: #fff; background: var(--accent); }
+
+    .footer-meta {
+      margin-left: auto;
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+    .copyright {
+      padding: 0 12px 10px;
+      font-size: 9px;
+      color: var(--text-muted);
+      font-style: italic;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+<!-- header -->
+<div class="header">
+  <div class="header-logo">
+    <img src="icons/icon48.png" width="22" height="22" alt="MDDS logo" />
+  </div>
+  <div>
+    <div class="header-title">MDDS</div>
+    <div class="header-sub">Malicious Domain Detection System</div>
+  </div>
+  <div class="server-status">
+    <div class="status-dot" id="statusDot"></div>
+    <span id="statusLabel">—</span>
+  </div>
+</div>
+
+<!-- stan: ladowanie -->
+<div class="state" id="stateLoading">
+  <div class="spinner"></div>
+  <div class="state-title">Analizuję domenę…</div>
+  <div class="state-sub">Trwa ekstrakcja cech infrastrukturalnych i leksykalnych</div>
+</div>
+
+<!-- stan: blad -->
+<div class="state" id="stateError">
+  <div class="state-icon">⚠️</div>
+  <div class="state-title">Brak połączenia z serwerem</div>
+  <div class="state-sub">Upewnij się, że serwer MDDS działa<br>na porcie 8000.</div>
+  <div class="state-error-msg" id="errMsg"></div>
+</div>
+
+<!-- stan: bezczynnosc -->
+<div class="state" id="stateIdle">
+  <div class="state-icon">🛡️</div>
+  <div class="state-title">Brak aktywnej strony</div>
+  <div class="state-sub">Otwórz dowolną stronę internetową,<br>aby uruchomić klasyfikację domeny.</div>
+</div>
+
+<!-- wynik klasyfikacji -->
+<div class="result" id="result">
+  <div class="domain-card" id="domainCard">
+    <div class="domain-label">Analizowana domena</div>
+    <div class="domain-name" id="domainName">—</div>
+
+    <div class="gauge-section">
+      <div class="gauge-wrap">
+        <div class="gauge-track">
+          <div class="gauge-fill" id="gaugeFill"></div>
+        </div>
+        <div class="gauge-ticks">
+          <span class="gauge-tick">0%</span>
+          <span class="gauge-tick">Ryzyko złośliwości</span>
+          <span class="gauge-tick">100%</span>
+        </div>
+      </div>
+      <div class="score-block">
+        <div class="score-value" id="scoreValue">—</div>
+      </div>
+    </div>
+
+    <div>
+      <div class="verdict-pill" id="verdictPill">
+        <span id="verdictText">—</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- panel szczegolów -->
+  <div class="details-panel" id="detailsPanel">
+    <div class="details-title">Cechy domeny</div>
+    <div class="feat-grid" id="featGrid"></div>
+  </div>
+</div>
+
+<!-- footer -->
+<div class="footer" id="footer">
+  <button class="btn" id="btnRefresh">↻ Odśwież</button>
+  <button class="btn" id="btnDetails">Szczegóły</button>
+  <div class="footer-meta" id="footerMeta"></div>
+</div>
+
+<div class="copyright">Implementacja komputerowa: ©2025-2026 Jakub Zapała</div>
+
+<script src="popup.js"></script>
+</body>
+</html>
